@@ -38,12 +38,17 @@ export default defineNuxtConfig({
     },
     workbox: {
       // App shell offline support
-      navigateFallback: "/",
+      // ssr 離線快取, 如果/已快取，則離線時會顯示快取的/，如果/未快取，則離線時會顯示/offline.html
+      navigateFallback: "/offline.html",
+      additionalManifestEntries: [
+        { url: "/", revision: 'v1' },
+        { url: "/offline.html", revision: 'v1' },
+      ],
+      //spa 離線快取, 不用加入 additionalManifestEntries，因為 spa 模式下會把所有資源都快取起來
+      //navigateFallback: "/",
+  
       navigateFallbackDenylist: [/^\/api\//, /^\/_nuxt\//, /\/@fs\//],
-      // additionalManifestEntries: [
-      //   { url: "/", revision: null },
-      //   { url: "/offline.html", revision: null },
-      // ],
+      ignoreURLParametersMatching: [/^__WB_REVISION__$/],
       globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2,json}"],
       runtimeCaching: [
         {
