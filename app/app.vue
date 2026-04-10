@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD9xCT9U1z6tGRAMEz9kS-glyfaPewEouQ",
@@ -21,8 +22,42 @@ onMounted(async () => {
     if (await isSupported()) {
       getAnalytics(app);
     }
-  }
 
+    // ========== Firebase 接收推播設定 ==========
+    try {
+      const messaging = getMessaging(app);
+      
+      // 請求通知權限並獲取 Token
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const token = await getToken(messaging, {
+          vapidKey: 'BFOQRXQEq6FyYvcB5QDhyfUchTJ5Z9_Ce3JNYC0-m8mx7FDzpcmwy5uHntBjpEzPS3XtsLJ2n0Hv1YBeJERp5nk' // (需到 Firebase console -> 專案設定 -> 雲端通訊 -> Web 設定 產生/取得)
+        });
+        
+        if (token) {
+          console.log('成功取得 FCM Token: ', token);
+          // alert('成功取得 FCM Token: ' + token);
+          // TODO: 將 token 傳到你的後端伺服器儲存，以便發送推播
+        } else {
+          console.warn('無法獲取 FCM Token。');
+        }
+      } else {
+        console.warn('使用者尚未允許通知權限');
+      }
+
+      // 接聽前景推播訊息
+      onMessage(messaging, (payload) => {
+        console.log('收到前景推播: ', payload);
+        if (payload.notification) {
+          // TODO: 這裡你可以使用 UI 元件 (如 Toast 或 ElNotification) 改善預設的 alert 體驗
+          alert(`推播通知\n標題: ${payload.notification.title}\n內容: ${payload.notification.body}`);
+        }
+      });
+    } catch (error) {
+      console.error('Firebase 推播功能初始化失敗:', error);
+    }
+    // ===========================================
+  }
 
   window.addEventListener("beforeinstallprompt", (e) => {
     console.log("🔥 可以安裝了", e);
