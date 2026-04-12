@@ -16,7 +16,7 @@
             {{ isDark ? "Light Mode" : "Dark Mode" }}
           </button>
           <NuxtLink to="/search" class="cta secondary">前往搜尋頁</NuxtLink>
-          <button class="cta">Start Free</button>
+          <button class="cta login-btn" @click="showLoginModal = true">登入</button>
         </div>
       </nav>
 
@@ -96,6 +96,9 @@
         <button class="cta secondary">View Templates</button>
       </section>
     </main>
+
+    <!-- Login Modal Component -->
+    <LoginModal v-model="showLoginModal" />
   </div>
 </template>
 
@@ -106,6 +109,7 @@ import { apiGet } from "~/composables/useApi";
 import { useApiStore } from "~/stores/api";
 
 const isDark = ref(false);
+const showLoginModal = ref(false);
 const apiStore = useApiStore();
 const { apiData, apiError, isLoading, area } = storeToRefs(apiStore);
 
@@ -474,4 +478,6 @@ const fetchApi = async () => {
     align-items: flex-start;
   }
 }
+
+
 </style>
