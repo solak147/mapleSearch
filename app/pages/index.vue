@@ -16,7 +16,14 @@
             {{ isDark ? "Light Mode" : "Dark Mode" }}
           </button>
           <NuxtLink to="/search" class="cta secondary">前往搜尋頁</NuxtLink>
-          <button class="cta login-btn" @click="showLoginModal = true">登入</button>
+          
+          <template v-if="authStore.isLoggedIn">
+            <span class="user-greeting">Hi, {{ authStore.user?.displayName || 'User' }}</span>
+            <button class="cta secondary logout-btn" @click="handleLogout">登出</button>
+          </template>
+          <template v-else>
+            <button class="cta login-btn" @click="showLoginModal = true">登入</button>
+          </template>
         </div>
       </nav>
 
@@ -107,11 +114,23 @@ import { storeToRefs } from "pinia";
 import { onMounted, ref, watch } from "vue";
 import { apiGet } from "~/composables/useApi";
 import { useApiStore } from "~/stores/api";
+import { useAuthStore } from "~/stores/auth";
+import { getAuth, signOut } from "firebase/auth";
 
 const isDark = ref(false);
 const showLoginModal = ref(false);
 const apiStore = useApiStore();
+const authStore = useAuthStore();
 const { apiData, apiError, isLoading, area } = storeToRefs(apiStore);
+
+const handleLogout = async () => {
+  try {
+    const auth = getAuth();
+    await signOut(auth);
+  } catch (error) {
+    console.error('登出失敗:', error);
+  }
+};
 
 const applyTheme = (value) => {
   const theme = value ? "dark" : "light";
@@ -257,6 +276,13 @@ const fetchApi = async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.user-greeting {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  margin-right: 8px;
 }
 
 .theme-toggle {

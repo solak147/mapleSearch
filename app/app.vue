@@ -2,6 +2,8 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useAuthStore } from "~/stores/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD9xCT9U1z6tGRAMEz9kS-glyfaPewEouQ",
@@ -22,6 +24,32 @@ onMounted(async () => {
     if (await isSupported()) {
       getAnalytics(app);
     }
+
+    // ========== Firebase 登入狀態監聽 (寫入 Store 與 Cookie) ==========
+    const auth = getAuth(app);
+    const authStore = useAuthStore();
+    const tokenCookie = useCookie('auth_token', { maxAge: 60 * 60 * 24 * 7 }); // 7天效期
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // 使用者已登入，存入 Store
+        authStore.setUser({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email?.split('@')[0],
+          photoURL: user.photoURL
+        });
+        
+        // 取得 JWT Token 並存入 Cookie 給 SSR / Middleware 使用
+        const token = await user.getIdToken();
+        tokenCookie.value = token;
+      } else {
+        // 使用者已登出，清除 Store 與 Cookie
+        authStore.clearUser();
+        tokenCookie.value = null;
+      }
+    });
+    // =============================================================
 
     // ========== Firebase 接收推播設定 ==========
     try {
