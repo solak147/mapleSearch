@@ -1,19 +1,89 @@
 <script setup>
-import { defineModel } from 'vue';
+import { defineModel, ref } from 'vue';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  FacebookAuthProvider, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword 
+} from "firebase/auth";
 
 const isOpen = defineModel({ type: Boolean, default: false });
+
+const email = ref('');
+const password = ref('');
+const errorMsg = ref('');
+const isLoginMode = ref(true); // true = 登入, false = 註冊
+const isLoading = ref(false);
+
+const handleGoogleLogin = async () => {
+  errorMsg.value = '';
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("Google 登入成功:", result.user);
+    isOpen.value = false;
+  } catch (error) {
+    console.error("Google 登入失敗:", error);
+    errorMsg.value = "Google 登入失敗: " + error.message;
+  }
+};
+
+const handleFacebookLogin = async () => {
+  errorMsg.value = '';
+  const auth = getAuth();
+  const provider = new FacebookAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log("Facebook 登入成功:", result.user);
+    isOpen.value = false;
+  } catch (error) {
+    console.error("Facebook 登入失敗:", error);
+    errorMsg.value = "Facebook 登入失敗: " + error.message;
+  }
+};
+
+const handleEmailAuth = async () => {
+  if (!email.value || !password.value) {
+    errorMsg.value = '請填寫電子郵件與密碼';
+    return;
+  }
+  errorMsg.value = '';
+  isLoading.value = true;
+  
+  const auth = getAuth();
+  try {
+    if (isLoginMode.value) {
+      const result = await signInWithEmailAndPassword(auth, email.value, password.value);
+      console.log("Email 登入成功:", result.user);
+    } else {
+      const result = await createUserWithEmailAndPassword(auth, email.value, password.value);
+      console.log("Email 註冊成功:", result.user);
+    }
+    isOpen.value = false;
+    email.value = '';
+    password.value = '';
+  } catch (error) {
+    console.error("Email 驗證失敗:", error);
+    errorMsg.value = (isLoginMode.value ? "登入失敗: " : "註冊失敗: ") + error.message;
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
   <div v-if="isOpen" class="modal-overlay" @click.self="isOpen = false">
     <div class="modal-content">
       <button class="modal-close" @click="isOpen = false">&times;</button>
-      <h2 class="modal-title">登入 / 註冊</h2>
+      <h2 class="modal-title">{{ isLoginMode ? '登入' : '註冊' }}</h2>
       <div class="login-options">
-        <button class="oauth-btn google-btn">
+        <button class="oauth-btn google-btn" type="button" @click="handleGoogleLogin">
           <span class="icon">G</span> 繼續使用 Google
         </button>
-        <button class="oauth-btn fb-btn">
+        <button class="oauth-btn fb-btn" type="button" @click="handleFacebookLogin">
           <span class="icon">f</span> 繼續使用 Facebook
         </button>
         
@@ -21,10 +91,20 @@ const isOpen = defineModel({ type: Boolean, default: false });
           <span>或使用電子郵件</span>
         </div>
         
-        <form class="email-login-form" @submit.prevent>
-          <input type="email" placeholder="電子郵件信箱" class="login-input" required />
-          <input type="password" placeholder="密碼" class="login-input" required />
-          <button type="submit" class="submit-btn">登入</button>
+        <form class="email-login-form" @submit.prevent="handleEmailAuth">
+          <input type="email" v-model="email" placeholder="電子郵件信箱" class="login-input" required />
+          <input type="password" v-model="password" placeholder="密碼" class="login-input" required />
+          
+          <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+          
+          <button type="submit" class="submit-btn" :disabled="isLoading">
+            {{ isLoading ? '處理中...' : (isLoginMode ? '登入' : '註冊') }}
+          </button>
+          
+          <div class="toggle-mode">
+            <span v-if="isLoginMode">還沒有帳號？ <a href="#" @click.prevent="isLoginMode = false">點此註冊</a></span>
+            <span v-else>已經有帳號了？ <a href="#" @click.prevent="isLoginMode = true">點此登入</a></span>
+          </div>
         </form>
       </div>
     </div>
@@ -195,7 +275,31 @@ const isOpen = defineModel({ type: Boolean, default: false });
   font-size: 16px;
 }
 
-.submit-btn:hover {
-  opacity: 0.9;
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: #e74c3c;
+  font-size: 13px;
+  margin: 0;
+  text-align: left;
+}
+
+.toggle-mode {
+  font-size: 13px;
+  margin-top: 10px;
+  color: var(--text-muted);
+}
+
+.toggle-mode a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.toggle-mode a:hover {
+  text-decoration: underline;
 }
 </style>
