@@ -72,6 +72,34 @@
     </header>
 
     <main class="content">
+      <section class="media-section">
+        <div class="video-container">
+          <iframe 
+            class="hero-video"
+            src="https://www.youtube.com/embed/-9wY4O6AXLg?rel=0&modestbranding=1&autoplay=1&mute=1&loop=1&playlist=-9wY4O6AXLg" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen>
+          </iframe>
+        </div>
+        
+        <div class="carousel-container">
+          <div class="carousel">
+            <img :src="carouselImages[carouselIndex]" alt="carousel image" class="carousel-image">
+            <button v-if="carouselImages.length > 1" class="carousel-btn prev" @click="prevImage">&lt;</button>
+            <button v-if="carouselImages.length > 1" class="carousel-btn next" @click="nextImage">&gt;</button>
+            <div v-if="carouselImages.length > 1" class="carousel-indicators">
+              <span 
+                v-for="(img, idx) in carouselImages" 
+                :key="idx" 
+                :class="['dot', { active: idx === carouselIndex }]" 
+                @click="carouselIndex = idx">
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="feature-grid">
         <article class="feature">
           <h3 class="feature-title">Unified results</h3>
@@ -119,6 +147,21 @@ import { getAuth, signOut } from "firebase/auth";
 
 const isDark = ref(false);
 const showLoginModal = ref(false);
+const carouselImages = ref([
+  "https://mod-file.dn.nexoncdn.co.kr/game/cabbc2ce91844c79989b18931fe492fe/20372000134359036_1767833892263_f7403765-c041-42a3-be82-9010c34bead0.png?s=892x500&t=crop&q=100&f=png",
+  "https://mod-file.dn.nexoncdn.co.kr/game/cabbc2ce91844c79989b18931fe492fe/20372100000149640_1776059994338_252c617b-0caf-44db-839b-830f4e1b2875.png?s=892x500&t=crop&q=100&f=png",
+  "https://mod-file.dn.nexoncdn.co.kr/game/cabbc2ce91844c79989b18931fe492fe/20372100000149640_1776059991731_63cb4747-77e3-466b-94ad-86b36f13fbda.png?s=892x500&t=crop&q=100&f=png",
+  "https://mod-file.dn.nexoncdn.co.kr/game/cabbc2ce91844c79989b18931fe492fe/20372100000149640_1776059984999_6382e9a7-2d58-4b52-81bb-2612ad8b83f6.jpg?s=892x500&t=crop&q=100&f=png",
+]);
+const carouselIndex = ref(0);
+
+const nextImage = () => {
+  carouselIndex.value = (carouselIndex.value + 1) % carouselImages.value.length;
+};
+const prevImage = () => {
+  carouselIndex.value = (carouselIndex.value - 1 + carouselImages.value.length) % carouselImages.value.length;
+};
+
 const apiStore = useApiStore();
 const authStore = useAuthStore();
 const { apiData, apiError, isLoading, area } = storeToRefs(apiStore);
@@ -435,11 +478,100 @@ const fetchApi = async () => {
   padding: 0 8vw 80px;
 }
 
+.media-section {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 60px;
+  margin-top: 20px;
+  align-items: stretch;
+}
+
+.video-container, .carousel-container {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.hero-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px var(--shadow);
+  background: var(--card);
+}
+
+.carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px var(--shadow);
+  background: var(--card);
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  border: none;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.carousel-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.carousel-btn.prev {
+  left: 12px;
+}
+
+.carousel-btn.next {
+  right: 12px;
+}
+
+.carousel-indicators {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dot.active {
+  background: white;
+}
+
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
-  margin-top: -28px;
 }
 
 .feature {
@@ -492,6 +624,10 @@ const fetchApi = async () => {
 
   .hero-body {
     margin-top: 48px;
+  }
+
+  .media-section {
+    flex-direction: column;
   }
 
   .hero-stats,
