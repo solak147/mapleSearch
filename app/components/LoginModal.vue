@@ -1,24 +1,24 @@
 <script setup>
-import { defineModel, ref } from 'vue';
-import { 
-  getAuth, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  FacebookAuthProvider, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
+import { defineModel, ref } from "vue";
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 
 const isOpen = defineModel({ type: Boolean, default: false });
 
-const email = ref('');
-const password = ref('');
-const errorMsg = ref('');
+const email = ref("");
+const password = ref("");
+const errorMsg = ref("");
 const isLoginMode = ref(true); // true = 登入, false = 註冊
 const isLoading = ref(false);
 
 const handleGoogleLogin = async () => {
-  errorMsg.value = '';
+  errorMsg.value = "";
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
   try {
@@ -32,7 +32,7 @@ const handleGoogleLogin = async () => {
 };
 
 const handleFacebookLogin = async () => {
-  errorMsg.value = '';
+  errorMsg.value = "";
   const auth = getAuth();
   const provider = new FacebookAuthProvider();
   try {
@@ -47,27 +47,36 @@ const handleFacebookLogin = async () => {
 
 const handleEmailAuth = async () => {
   if (!email.value || !password.value) {
-    errorMsg.value = '請填寫電子郵件與密碼';
+    errorMsg.value = "請填寫電子郵件與密碼";
     return;
   }
-  errorMsg.value = '';
+  errorMsg.value = "";
   isLoading.value = true;
-  
+
   const auth = getAuth();
   try {
     if (isLoginMode.value) {
-      const result = await signInWithEmailAndPassword(auth, email.value, password.value);
+      const result = await signInWithEmailAndPassword(
+        auth,
+        email.value,
+        password.value,
+      );
       console.log("Email 登入成功:", result.user);
     } else {
-      const result = await createUserWithEmailAndPassword(auth, email.value, password.value);
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email.value,
+        password.value,
+      );
       console.log("Email 註冊成功:", result.user);
     }
     isOpen.value = false;
-    email.value = '';
-    password.value = '';
+    email.value = "";
+    password.value = "";
   } catch (error) {
     console.error("Email 驗證失敗:", error);
-    errorMsg.value = (isLoginMode.value ? "登入失敗: " : "註冊失敗: ") + error.message;
+    errorMsg.value =
+      (isLoginMode.value ? "登入失敗: " : "註冊失敗: ") + error.message;
   } finally {
     isLoading.value = false;
   }
@@ -78,32 +87,60 @@ const handleEmailAuth = async () => {
   <div v-if="isOpen" class="modal-overlay" @click.self="isOpen = false">
     <div class="modal-content">
       <button class="modal-close" @click="isOpen = false">&times;</button>
-      <h2 class="modal-title">{{ isLoginMode ? '登入' : '註冊' }}</h2>
+      <h2 class="modal-title">{{ isLoginMode ? "登入" : "註冊" }}</h2>
       <div class="login-options">
-        <button class="oauth-btn google-btn" type="button" @click="handleGoogleLogin">
+        <button
+          class="oauth-btn google-btn"
+          type="button"
+          @click="handleGoogleLogin"
+        >
           <span class="icon">G</span> 繼續使用 Google
         </button>
-        <button class="oauth-btn fb-btn" type="button" @click="handleFacebookLogin">
+        <button
+          class="oauth-btn fb-btn"
+          type="button"
+          @click="handleFacebookLogin"
+        >
           <span class="icon">f</span> 繼續使用 Facebook
         </button>
-        
+
         <div class="divider">
           <span>或使用電子郵件</span>
         </div>
-        
+
         <form class="email-login-form" @submit.prevent="handleEmailAuth">
-          <input type="email" v-model="email" placeholder="電子郵件信箱" class="login-input" required />
-          <input type="password" v-model="password" placeholder="密碼" class="login-input" required />
-          
+          <input
+            type="email"
+            v-model="email"
+            placeholder="電子郵件信箱"
+            class="login-input"
+            required
+          />
+          <input
+            type="password"
+            v-model="password"
+            placeholder="密碼"
+            class="login-input"
+            required
+          />
+
           <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
-          
+
           <button type="submit" class="submit-btn" :disabled="isLoading">
-            {{ isLoading ? '處理中...' : (isLoginMode ? '登入' : '註冊') }}
+            {{ isLoading ? "處理中..." : isLoginMode ? "登入" : "註冊" }}
           </button>
-          
+
           <div class="toggle-mode">
-            <span v-if="isLoginMode">還沒有帳號？ <a href="#" @click.prevent="isLoginMode = false">點此註冊</a></span>
-            <span v-else>已經有帳號了？ <a href="#" @click.prevent="isLoginMode = true">點此登入</a></span>
+            <span v-if="isLoginMode"
+              >還沒有帳號？
+              <a href="#" @click.prevent="isLoginMode = false"
+                >點此註冊</a
+              ></span
+            >
+            <span v-else
+              >已經有帳號了？
+              <a href="#" @click.prevent="isLoginMode = true">點此登入</a></span
+            >
           </div>
         </form>
       </div>
@@ -126,8 +163,12 @@ const handleEmailAuth = async () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -143,8 +184,14 @@ const handleEmailAuth = async () => {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-close {
@@ -250,7 +297,9 @@ const handleEmailAuth = async () => {
   background: transparent;
   border-radius: 12px;
   color: var(--text);
-  transition: opacity 0.2s, border-color 0.2s;
+  transition:
+    opacity 0.2s,
+    border-color 0.2s;
 }
 
 .login-input:focus {

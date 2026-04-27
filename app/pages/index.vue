@@ -85,18 +85,88 @@
         
         <div class="carousel-container">
           <div class="carousel">
-            <img :src="carouselImages[carouselIndex]" alt="carousel image" class="carousel-image">
-            <button v-if="carouselImages.length > 1" class="carousel-btn prev" @click="prevImage">&lt;</button>
-            <button v-if="carouselImages.length > 1" class="carousel-btn next" @click="nextImage">&gt;</button>
+            <div
+              class="carousel-track"
+              :style="carouselTrackStyle"
+              @transitionend="handleCarouselTransitionEnd"
+            >
+              <div
+                v-for="(img, idx) in displayedCarouselImages"
+                :key="`${img}-${idx}`"
+                class="carousel-slide"
+              >
+                <img :src="img" alt="carousel image" class="carousel-image">
+              </div>
+            </div>
+            <button
+              v-if="carouselImages.length > 1"
+              class="carousel-btn prev"
+              @click="prevImage(); resetCarouselAutoPlay()"
+            >&lt;</button>
+            <button
+              v-if="carouselImages.length > 1"
+              class="carousel-btn next"
+              @click="nextImage(); resetCarouselAutoPlay()"
+            >&gt;</button>
             <div v-if="carouselImages.length > 1" class="carousel-indicators">
               <span 
                 v-for="(img, idx) in carouselImages" 
                 :key="idx" 
                 :class="['dot', { active: idx === carouselIndex }]" 
-                @click="carouselIndex = idx">
+                @click="goToImage(idx)">
               </span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section class="community-section">
+        <div class="section-heading">
+          <h2 class="section-title">社群 <span class="section-count">2</span></h2>
+        </div>
+
+        <div class="community-grid">
+          <a
+            class="community-card"
+            href="https://www.youtube.com/@artale_tw"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="community-icon youtube-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path
+                  d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.7 31.7 0 0 0 0 12a31.7 31.7 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.7 31.7 0 0 0 24 12a31.7 31.7 0 0 0-.5-5.8ZM9.6 15.6V8.4L15.8 12l-6.2 3.6Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <span class="community-label">Artale Official Youtube!</span>
+            <span class="community-more" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path
+                  d="M12 7a1.75 1.75 0 1 0 0-3.5A1.75 1.75 0 0 0 12 7Zm0 6.75a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5Zm0 6.75a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+          </a>
+
+          <a
+            class="community-card"
+            href="https://discord.com/invite/pAQYfS2eE5"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="community-icon discord-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img" focusable="false">
+                <path
+                  d="M20.3 4.4A16.9 16.9 0 0 0 16.2 3l-.2.4c-.2.5-.4 1-.5 1.5a15.5 15.5 0 0 0-7 0c-.2-.5-.3-1-.5-1.5L7.8 3A16.8 16.8 0 0 0 3.7 4.4C1.1 8.3.4 12 .7 15.6a17 17 0 0 0 5 2.5l1.1-1.8c-.6-.2-1.2-.5-1.8-.8l.4-.3c3.4 1.6 7 1.6 10.4 0l.4.3c-.6.3-1.2.6-1.8.8l1.1 1.8a17 17 0 0 0 5-2.5c.4-4.1-.7-7.8-3.2-11.2ZM8.8 13.4c-.9 0-1.6-.8-1.6-1.9s.7-1.9 1.6-1.9 1.6.8 1.6 1.9-.7 1.9-1.6 1.9Zm6.4 0c-.9 0-1.6-.8-1.6-1.9s.7-1.9 1.6-1.9 1.6.8 1.6 1.9-.7 1.9-1.6 1.9Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <span class="community-label">Artale Official Discord!</span>
+          </a>
         </div>
       </section>
 
@@ -139,7 +209,7 @@
 
 <script setup>
 import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { apiGet } from "~/composables/useApi";
 import { useApiStore } from "~/stores/api";
 import { useAuthStore } from "~/stores/auth";
@@ -154,12 +224,90 @@ const carouselImages = ref([
   "https://mod-file.dn.nexoncdn.co.kr/game/cabbc2ce91844c79989b18931fe492fe/20372100000149640_1776059984999_6382e9a7-2d58-4b52-81bb-2612ad8b83f6.jpg?s=892x500&t=crop&q=100&f=png",
 ]);
 const carouselIndex = ref(0);
+const currentSlide = ref(1);
+const isCarouselAnimating = ref(true);
+const carouselDirection = ref(0);
+const carouselIntervalMs = 4000;
+let carouselTimer = null;
+
+const displayedCarouselImages = computed(() => {
+  if (carouselImages.value.length <= 1) return carouselImages.value;
+  const total = carouselImages.value.length;
+  const prevIdx = (carouselIndex.value - 1 + total) % total;
+  const nextIdx = (carouselIndex.value + 1) % total;
+  return [
+    carouselImages.value[prevIdx],
+    carouselImages.value[carouselIndex.value],
+    carouselImages.value[nextIdx],
+  ];
+});
+
+const carouselTrackStyle = computed(() => ({
+  transform: `translateX(-${currentSlide.value * (100 / 3)}%)`,
+  transition: isCarouselAnimating.value ? "transform 0.55s ease" : "none",
+}));
+
+const resetCarouselAutoPlay = () => {
+  stopCarouselAutoPlay();
+  startCarouselAutoPlay();
+};
 
 const nextImage = () => {
-  carouselIndex.value = (carouselIndex.value + 1) % carouselImages.value.length;
+  if (carouselImages.value.length <= 1) return;
+  carouselDirection.value = 1;
+  isCarouselAnimating.value = true;
+  currentSlide.value = 2;
 };
+
 const prevImage = () => {
-  carouselIndex.value = (carouselIndex.value - 1 + carouselImages.value.length) % carouselImages.value.length;
+  if (carouselImages.value.length <= 1) return;
+  carouselDirection.value = -1;
+  isCarouselAnimating.value = true;
+  currentSlide.value = 0;
+};
+
+const goToImage = (idx) => {
+  if (idx === carouselIndex.value || carouselImages.value.length <= 1) return;
+  carouselIndex.value = idx;
+  currentSlide.value = 1;
+  isCarouselAnimating.value = false;
+  resetCarouselAutoPlay();
+};
+
+const startCarouselAutoPlay = () => {
+  if (carouselImages.value.length <= 1 || carouselTimer !== null) return;
+  carouselTimer = window.setInterval(() => {
+    nextImage();
+  }, carouselIntervalMs);
+};
+
+const stopCarouselAutoPlay = () => {
+  if (carouselTimer !== null) {
+    window.clearInterval(carouselTimer);
+    carouselTimer = null;
+  }
+};
+
+const waitForNextFrame = () =>
+  new Promise((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(resolve);
+    });
+  });
+
+const handleCarouselTransitionEnd = async () => {
+  if (carouselImages.value.length <= 1) return;
+  if (carouselDirection.value === 0) return;
+
+  isCarouselAnimating.value = false;
+  carouselIndex.value =
+    (carouselIndex.value + carouselDirection.value + carouselImages.value.length) %
+    carouselImages.value.length;
+  currentSlide.value = 1;
+  carouselDirection.value = 0;
+  await nextTick();
+  await waitForNextFrame();
+  isCarouselAnimating.value = true;
 };
 
 const apiStore = useApiStore();
@@ -190,6 +338,11 @@ onMounted(() => {
     isDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches;
   }
   applyTheme(isDark.value);
+  startCarouselAutoPlay();
+});
+
+onBeforeUnmount(() => {
+  stopCarouselAutoPlay();
 });
 
 watch(isDark, (value) => {
@@ -510,10 +663,23 @@ const fetchApi = async () => {
   background: var(--card);
 }
 
+.carousel-track {
+  display: flex;
+  height: 100%;
+  width: 300%;
+  will-change: transform;
+}
+
+.carousel-slide {
+  flex: 0 0 calc(100% / 3);
+  min-width: 0;
+}
+
 .carousel-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .carousel-btn {
@@ -566,6 +732,92 @@ const fetchApi = async () => {
 
 .dot.active {
   background: white;
+}
+
+.community-section {
+  margin-bottom: 48px;
+}
+
+.section-heading {
+  margin-bottom: 16px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.section-count {
+  color: #f97316;
+}
+
+.community-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.community-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 78px;
+  padding: 0 28px;
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 14px 30px var(--shadow);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.community-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px var(--shadow);
+}
+
+.community-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+}
+
+.community-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.youtube-icon {
+  color: #ff2d20;
+}
+
+.discord-icon {
+  color: #7289da;
+}
+
+.community-label {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.community-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text);
+}
+
+.community-more svg {
+  width: 100%;
+  height: 100%;
 }
 
 .feature-grid {
@@ -638,6 +890,10 @@ const fetchApi = async () => {
   .cta-band {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .community-grid {
+    grid-template-columns: 1fr;
   }
 }
 
