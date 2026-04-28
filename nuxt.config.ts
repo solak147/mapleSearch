@@ -1,9 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const githubPagesBaseUrl = process.env.NUXT_APP_BASE_URL || "/";
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   // ssr: false,
   modules: ["@vite-pwa/nuxt"],
+  app: {
+    baseURL: githubPagesBaseUrl,
+  },
   // app: {
   //   head: {
   //     直接在pubic目录下放置manifest.webmanifest文件，實現pwa功能，這樣就不需要使用@vite-pwa/nuxt模塊
@@ -26,9 +31,9 @@ export default defineNuxtConfig({
       // Production (and dev) proxy for /api/*
       "/api/**": { proxy: "https://artaledrop.com/**" },
     },
-    // prerender: {
-    //   routes: ['/'],   // 預先渲染首頁產生靜態 HTML
-    // },
+    prerender: {
+      routes: ["/", "/search", "/bossBirth"],
+    },
   },
   pwa: {
     registerType: "autoUpdate",
@@ -92,7 +97,7 @@ export default defineNuxtConfig({
       short_name: "MapleSearch",
       description: "Maple Search web app",
       lang: "zh-TW",
-      start_url: "/",
+      start_url: githubPagesBaseUrl,
       display: "standalone",
       background_color: "#ffffff",
       theme_color: "#0f172a",
@@ -112,7 +117,7 @@ export default defineNuxtConfig({
       ],
     },
     devOptions: {
-      enabled: true,
+      enabled: false,
     },
   },
 });
