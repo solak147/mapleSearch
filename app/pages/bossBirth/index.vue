@@ -1,0 +1,309 @@
+<template>
+  <div class="bossbirth-page">
+    <div class="bossbirth-shell">
+      <div class="bossbirth-header">
+        <h1>怪物重生</h1>
+        <NuxtLink to="/" class="back-link">返回首頁</NuxtLink>
+      </div>
+      <p class="bossbirth-copy">記錄各個 Boss 的頻道與重生時間。</p>
+
+      <form class="bossbirth-form" @submit.prevent="addRow">
+        <label class="field">
+          <span>boss</span>
+          <input v-model="newRow.boss" type="text" placeholder="輸入 Boss 名稱">
+        </label>
+        <label class="field">
+          <span>頻道</span>
+          <input v-model="newRow.channel" type="text" placeholder="例如 CH 01">
+        </label>
+        <label class="field">
+          <span>最早重生</span>
+          <input v-model="newRow.earliestRespawn" type="time" step="1">
+        </label>
+        <label class="field">
+          <span>最晚重生</span>
+          <input v-model="newRow.latestRespawn" type="time" step="1">
+        </label>
+        <button type="submit" class="add-row-btn">新增列</button>
+      </form>
+
+      <div class="filter-bar">
+        <label class="field filter-field">
+          <span>過濾 boss 名稱</span>
+          <input
+            v-model="bossFilter"
+            type="text"
+            placeholder="輸入 boss 關鍵字"
+          >
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table class="bossbirth-table">
+          <thead>
+            <tr>
+              <th>boss</th>
+              <th>頻道</th>
+              <th>最早重生</th>
+              <th>最晚重生</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in filteredBossRows" :key="`${row.boss}-${row.channel}`">
+              <td>{{ row.boss }}</td>
+              <td>{{ row.channel }}</td>
+              <td>{{ formatCountdown(row.earliestRespawnSeconds) }}</td>
+              <td>{{ formatCountdown(row.latestRespawnSeconds) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+
+const parseTimeToSeconds = (timeText) => {
+  if (!timeText) return 0;
+
+  const [hours = "0", minutes = "0", seconds = "0"] = timeText.split(":");
+
+  return (
+    Number(hours) * 3600 +
+    Number(minutes) * 60 +
+    Number(seconds)
+  );
+};
+
+const formatCountdown = (totalSeconds) => {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = String(Math.floor(safeSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((safeSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(safeSeconds % 60).padStart(2, "0");
+
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const createBossRow = (boss, channel, earliestRespawn, latestRespawn) => ({
+  boss,
+  channel,
+  earliestRespawnSeconds: parseTimeToSeconds(earliestRespawn),
+  latestRespawnSeconds: parseTimeToSeconds(latestRespawn),
+});
+
+const bossRows = ref([
+  createBossRow("炎魔", "CH 01", "00:00:00", "00:00:00"),
+  createBossRow("殘暴炎魔", "CH 02", "00:00:00", "00:00:00"),
+  createBossRow("闇黑龍王", "CH 03", "00:00:00", "00:00:00"),
+]);
+
+const newRow = reactive({
+  boss: "",
+  channel: "",
+  earliestRespawn: "",
+  latestRespawn: "",
+});
+const bossFilter = ref("");
+
+let countdownTimer = null;
+
+const filteredBossRows = computed(() => {
+  const keyword = bossFilter.value.trim().toLowerCase();
+
+  if (!keyword) return bossRows.value;
+
+  return bossRows.value.filter((row) =>
+    row.boss.toLowerCase().includes(keyword)
+  );
+});
+
+const tickCountdown = () => {
+  bossRows.value.forEach((row) => {
+    if (row.earliestRespawnSeconds > 0) {
+      row.earliestRespawnSeconds -= 1;
+    }
+
+    if (row.latestRespawnSeconds > 0) {
+      row.latestRespawnSeconds -= 1;
+    }
+  });
+};
+
+const addRow = () => {
+  const boss = newRow.boss.trim();
+  const channel = newRow.channel.trim();
+  const earliestRespawn = newRow.earliestRespawn.trim();
+  const latestRespawn = newRow.latestRespawn.trim();
+
+  if (!boss || !channel || !earliestRespawn || !latestRespawn) return;
+
+  bossRows.value.push(createBossRow(boss, channel, earliestRespawn, latestRespawn));
+
+  newRow.boss = "";
+  newRow.channel = "";
+  newRow.earliestRespawn = "";
+  newRow.latestRespawn = "";
+};
+
+onMounted(() => {
+  countdownTimer = window.setInterval(tickCountdown, 1000);
+});
+
+onBeforeUnmount(() => {
+  if (countdownTimer !== null) {
+    window.clearInterval(countdownTimer);
+  }
+});
+</script>
+
+<style scoped>
+.bossbirth-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f6f2ea;
+}
+
+.bossbirth-shell {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 40px rgba(28, 61, 90, 0.12);
+}
+
+.bossbirth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h1 {
+  margin: 0;
+  color: #1c3d5a;
+}
+
+.bossbirth-copy {
+  margin: 20px 0 0;
+  color: #2c4158;
+  font-size: 16px;
+}
+
+.bossbirth-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 16px;
+  margin-top: 24px;
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #1c3d5a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.field input {
+  border: 1px solid #c9d6e3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 15px;
+  color: #2c4158;
+  background: #ffffff;
+}
+
+.field input:focus {
+  outline: 2px solid rgba(28, 61, 90, 0.18);
+  border-color: #1c3d5a;
+}
+
+.add-row-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: #1c3d5a;
+  color: #fff4dc;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-bar {
+  margin-top: 20px;
+}
+
+.filter-field {
+  max-width: 320px;
+}
+
+.table-wrap {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.bossbirth-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.bossbirth-table th,
+.bossbirth-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #d8e0ea;
+  text-align: left;
+}
+
+.bossbirth-table th {
+  background: #1c3d5a;
+  color: #fff4dc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bossbirth-table td {
+  color: #2c4158;
+  background: #ffffff;
+}
+
+.bossbirth-table tbody tr:nth-child(even) td {
+  background: #f8fbff;
+}
+
+.back-link {
+  color: #1c3d5a;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .bossbirth-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .bossbirth-page {
+    padding: 20px;
+  }
+
+  .bossbirth-shell {
+    padding: 24px;
+  }
+
+  .bossbirth-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bossbirth-form {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
