@@ -1,25 +1,15 @@
 <script setup lang="ts">
-import { initializeApp, getApps } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { useAuthStore } from "~/stores/auth";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyD9xCT9U1z6tGRAMEz9kS-glyfaPewEouQ",
-  authDomain: "maplesearch-cee92.firebaseapp.com",
-  projectId: "maplesearch-cee92",
-  storageBucket: "maplesearch-cee92.firebasestorage.app",
-  messagingSenderId: "82569881003",
-  appId: "1:82569881003:web:623e3c08a80b4a15b89eee",
-  measurementId: "G-WSZNYBV1E2",
-};
+import { getFirebaseApp } from "~/utils/firebase";
 
 const { $pwa } = useNuxtApp();
 
 onMounted(async () => {
   if (process.client) {
-    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const app = getFirebaseApp();
     console.log('app',app) //可以初始化有沒有成功
     if (await isSupported()) {
       getAnalytics(app);

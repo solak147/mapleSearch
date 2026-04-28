@@ -24,8 +24,12 @@
           <span>最晚重生</span>
           <input v-model="newRow.latestRespawn" type="time" step="1">
         </label>
-        <button type="submit" class="add-row-btn">新增列</button>
+        <button type="submit" class="add-row-btn" :disabled="isSaving">
+          {{ isSaving ? "儲存中..." : "新增列" }}
+        </button>
       </form>
+
+      <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
       <div class="filter-bar">
         <label class="field filter-field">
@@ -46,6 +50,7 @@
               <th>頻道</th>
               <th>最早重生</th>
               <th>最晚重生</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -54,6 +59,15 @@
               <td>{{ row.channel }}</td>
               <td>{{ formatCountdown(row.earliestRespawnSeconds) }}</td>
               <td>{{ formatCountdown(row.latestRespawnSeconds) }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="delete-row-btn"
+                  @click="deleteRow(row)"
+                >
+                  刪除
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -63,7 +77,10 @@
 </template>
 
 <script setup>
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { useAuthStore } from "~/stores/auth";
+import { getFirebaseDb } from "~/utils/firebase";
 
 const parseTimeToSeconds = (timeText) => {
   if (!timeText) return 0;
@@ -106,6 +123,9 @@ const newRow = reactive({
   latestRespawn: "",
 });
 const bossFilter = ref("");
+const saveError = ref("");
+const isSaving = ref(false);
+const authStore = useAuthStore();
 
 let countdownTimer = null;
 
@@ -131,7 +151,7 @@ const tickCountdown = () => {
   });
 };
 
-const addRow = () => {
+const addRow = async () => {
   const boss = newRow.boss.trim();
   const channel = newRow.channel.trim();
   const earliestRespawn = newRow.earliestRespawn.trim();
@@ -139,12 +159,46 @@ const addRow = () => {
 
   if (!boss || !channel || !earliestRespawn || !latestRespawn) return;
 
-  bossRows.value.push(createBossRow(boss, channel, earliestRespawn, latestRespawn));
+  if (!authStore.isLoggedIn) {
+    saveError.value = "請先登入，再新增 boss 資料。";
+    return;
+  }
 
-  newRow.boss = "";
-  newRow.channel = "";
-  newRow.earliestRespawn = "";
-  newRow.latestRespawn = "";
+  saveError.value = "";
+  isSaving.value = true;
+
+  try {
+    const db = getFirebaseDb();
+
+    await addDoc(collection(db, "bossBirthRows"), {
+      boss,
+      channel,
+      earliestRespawn,
+      latestRespawn,
+      createdAt: serverTimestamp(),
+      createdByUid: authStore.user?.uid || null,
+      createdByName: authStore.user?.displayName || null,
+    });
+
+    bossRows.value.push(createBossRow(boss, channel, earliestRespawn, latestRespawn));
+
+    newRow.boss = "";
+    newRow.channel = "";
+    newRow.earliestRespawn = "";
+    newRow.latestRespawn = "";
+  } catch (error) {
+    console.error("新增 boss 資料失敗:", error);
+    saveError.value =
+      error?.code === "permission-denied"
+        ? "Firebase 權限不足，請檢查 Firestore rules 是否允許已登入使用者寫入 bossBirthRows。"
+        : "寫入 Firebase 失敗，請稍後再試。";
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const deleteRow = (targetRow) => {
+  bossRows.value = bossRows.value.filter((row) => row !== targetRow);
 };
 
 onMounted(() => {
@@ -230,6 +284,29 @@ h1 {
   background: #1c3d5a;
   color: #fff4dc;
   font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-row-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.save-error {
+  margin: 12px 0 0;
+  color: #d94c3d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.delete-row-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: #d94c3d;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 }
