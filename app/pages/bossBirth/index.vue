@@ -64,9 +64,10 @@
                 <button
                   type="button"
                   class="delete-row-btn"
+                  :disabled="deletingRowId === row.id"
                   @click="deleteRow(row)"
                 >
-                  刪除
+                  {{ deletingRowId === row.id ? "刪除中..." : "刪除" }}
                 </button>
               </td>
             </tr>
@@ -81,7 +82,16 @@
 </template>
 
 <script setup>
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useAuthStore } from "~/stores/auth";
 import { getFirebaseDb } from "~/utils/firebase";
@@ -128,6 +138,7 @@ const saveError = ref("");
 const loadError = ref("");
 const isSaving = ref(false);
 const isLoadingRows = ref(false);
+const deletingRowId = ref("");
 const authStore = useAuthStore();
 
 let countdownTimer = null;
@@ -236,8 +247,28 @@ const addRow = async () => {
   }
 };
 
-const deleteRow = (targetRow) => {
-  bossRows.value = bossRows.value.filter((row) => row !== targetRow);
+const deleteRow = async (targetRow) => {
+  if (!authStore.isLoggedIn) {
+    saveError.value = "請先登入，再刪除 boss 資料。";
+    return;
+  }
+
+  saveError.value = "";
+  deletingRowId.value = targetRow.id;
+
+  try {
+    const db = getFirebaseDb();
+    await deleteDoc(doc(db, "bossBirthRows", targetRow.id));
+    bossRows.value = bossRows.value.filter((row) => row.id !== targetRow.id);
+  } catch (error) {
+    console.error("刪除 boss 資料失敗:", error);
+    saveError.value =
+      error?.code === "permission-denied"
+        ? "Firebase 權限不足，請檢查 Firestore rules 是否允許已登入使用者刪除 bossBirthRows。"
+        : "刪除 Firebase 資料失敗，請稍後再試。";
+  } finally {
+    deletingRowId.value = "";
+  }
 };
 
 onMounted(() => {
@@ -349,6 +380,11 @@ h1 {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.delete-row-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .filter-bar {
