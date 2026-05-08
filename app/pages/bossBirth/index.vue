@@ -289,7 +289,18 @@ onBeforeUnmount(() => {
 <style scoped>
 .bossbirth-page {
   min-height: 100vh;
-  background: #f6f2ea;
+  background:
+    radial-gradient(
+      1200px 500px at 10% 5%,
+      var(--bg-accent-1) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      900px 400px at 90% 10%,
+      var(--bg-accent-2) 0%,
+      transparent 60%
+    ),
+    var(--bg);
 }
 
 .bossbirth-hero {
@@ -301,8 +312,8 @@ onBeforeUnmount(() => {
   margin: 32px auto 0;
   padding: 32px;
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 18px 40px rgba(28, 61, 90, 0.12);
+  background: var(--card);
+  box-shadow: 0 18px 40px var(--shadow);
 }
 
 .bossbirth-header {
@@ -314,12 +325,12 @@ onBeforeUnmount(() => {
 
 h1 {
   margin: 0;
-  color: #1c3d5a;
+  color: var(--brand);
 }
 
 .bossbirth-copy {
   margin: 20px 0 0;
-  color: #2c4158;
+  color: var(--text-muted);
   font-size: 16px;
 }
 
@@ -335,31 +346,35 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #1c3d5a;
+  color: var(--brand);
   font-size: 14px;
   font-weight: 600;
 }
 
 .field input {
-  border: 1px solid #c9d6e3;
+  border: 1px solid color-mix(in srgb, var(--brand) 18%, transparent);
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 15px;
-  color: #2c4158;
-  background: #ffffff;
+  color: var(--text);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
 }
 
 .field input:focus {
-  outline: 2px solid rgba(28, 61, 90, 0.18);
-  border-color: #1c3d5a;
+  outline: 2px solid color-mix(in srgb, var(--brand) 18%, transparent);
+  border-color: var(--brand);
+}
+
+.field input::placeholder {
+  color: color-mix(in srgb, var(--text-muted) 75%, transparent);
 }
 
 .add-row-btn {
   border: none;
   border-radius: 12px;
   padding: 12px 18px;
-  background: #1c3d5a;
-  color: #fff4dc;
+  background: var(--brand);
+  color: var(--brand-contrast);
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
@@ -415,29 +430,29 @@ h1 {
 .bossbirth-table th,
 .bossbirth-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid #d8e0ea;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand) 16%, transparent);
   text-align: left;
 }
 
 .bossbirth-table th {
-  background: #1c3d5a;
-  color: #fff4dc;
+  background: var(--brand);
+  color: var(--brand-contrast);
   font-size: 14px;
   font-weight: 700;
 }
 
 .bossbirth-table td {
-  color: #2c4158;
-  background: #ffffff;
+  color: var(--text-muted);
+  background: var(--card);
 }
 
 .bossbirth-table tbody tr:nth-child(even) td {
-  background: #f8fbff;
+  background: color-mix(in srgb, var(--card-glass) 85%, var(--card));
 }
 
 .empty-state {
   margin: 16px 0 0;
-  color: #60758b;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
