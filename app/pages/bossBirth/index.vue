@@ -1,9 +1,12 @@
 <template>
   <div class="bossbirth-page">
+    <header class="bossbirth-hero">
+      <AppHeader :show-links="false" />
+    </header>
+
     <div class="bossbirth-shell">
       <div class="bossbirth-header">
         <h1>怪物重生</h1>
-        <NuxtLink to="/" class="back-link">返回首頁</NuxtLink>
       </div>
       <p class="bossbirth-copy">記錄各個 Boss 的頻道與重生時間。</p>
 
@@ -286,13 +289,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .bossbirth-page {
   min-height: 100vh;
-  padding: 32px;
   background: #f6f2ea;
+}
+
+.bossbirth-hero {
+  padding: 28px 8vw 0;
 }
 
 .bossbirth-shell {
   width: min(960px, 100%);
-  margin: 0 auto;
+  margin: 32px auto 0;
   padding: 32px;
   border-radius: 24px;
   background: #ffffff;
@@ -302,8 +308,8 @@ onBeforeUnmount(() => {
 .bossbirth-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
+  margin-top: 28px;
 }
 
 h1 {
@@ -435,12 +441,6 @@ h1 {
   font-size: 14px;
 }
 
-.back-link {
-  color: #1c3d5a;
-  text-decoration: none;
-  font-weight: 600;
-}
-
 @media (max-width: 900px) {
   .bossbirth-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -448,17 +448,14 @@ h1 {
 }
 
 @media (max-width: 640px) {
-  .bossbirth-page {
-    padding: 20px;
+  .bossbirth-hero {
+    padding: 20px 20px 0;
   }
 
   .bossbirth-shell {
+    width: calc(100% - 40px);
+    margin-top: 20px;
     padding: 24px;
-  }
-
-  .bossbirth-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .bossbirth-form {
