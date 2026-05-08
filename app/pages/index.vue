@@ -3,13 +3,7 @@
     <header class="hero">
       <AppHeader />
 
-      <div class="hero-body">
-        <p class="eyebrow">Fast, focused search for teams</p>
-        <h1 class="title">Search smarter. Ship faster.</h1>
-        <p class="subtitle">
-          A clean, custom homepage to help users find exactly what they need
-          with one simple query.
-        </p>
+      <!-- <div class="hero-body">
 
         <div class="search-card">
           <input
@@ -30,21 +24,7 @@
           }}</pre>
         </div>
 
-        <div class="hero-stats">
-          <div class="stat">
-            <div class="stat-value">98%</div>
-            <div class="stat-label">Answer accuracy</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">120ms</div>
-            <div class="stat-label">Avg. response time</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">3x</div>
-            <div class="stat-label">Faster onboarding</div>
-          </div>
-        </div>
-      </div>
+      </div> -->
     </header>
 
     <main class="content">
@@ -148,37 +128,6 @@
 
       <section class="announcement-section">
         <AnnouncementBoard />
-      </section>
-
-      <section class="feature-grid">
-        <article class="feature">
-          <h3 class="feature-title">Unified results</h3>
-          <p class="feature-text">
-            Search docs, tickets, and knowledge in a single place.
-          </p>
-        </article>
-        <article class="feature">
-          <h3 class="feature-title">Team-ready</h3>
-          <p class="feature-text">
-            Share answers instantly with smart snippets and links.
-          </p>
-        </article>
-        <article class="feature">
-          <h3 class="feature-title">Custom signals</h3>
-          <p class="feature-text">
-            Prioritize results that matter most to your workflow.
-          </p>
-        </article>
-      </section>
-
-      <section class="cta-band">
-        <div>
-          <h2 class="cta-title">Ready to personalize your homepage?</h2>
-          <p class="cta-text">
-            Drop in your brand, colors, and copy in minutes.
-          </p>
-        </div>
-        <button class="cta secondary">View Templates</button>
       </section>
     </main>
 
