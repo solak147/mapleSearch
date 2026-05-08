@@ -146,6 +146,10 @@
         </div>
       </section>
 
+      <section class="announcement-section">
+        <AnnouncementBoard />
+      </section>
+
       <section class="feature-grid">
         <article class="feature">
           <h3 class="feature-title">Unified results</h3>
@@ -177,6 +181,10 @@
         <button class="cta secondary">View Templates</button>
       </section>
     </main>
+
+    <footer class="page-footer">
+      <p class="copyright">© 2026 MapleSearch. All rights reserved.</p>
+    </footer>
   </div>
 </template>
 
@@ -472,12 +480,27 @@ const fetchApi = async () => {
   padding: 0 8vw 80px;
 }
 
+.page-footer {
+  padding: 0 8vw 32px;
+}
+
+.copyright {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .media-section {
   display: flex;
   gap: 24px;
   margin-bottom: 60px;
   margin-top: 20px;
   align-items: stretch;
+}
+
+.announcement-section {
+  margin-bottom: 60px;
 }
 
 .video-container, .carousel-container {

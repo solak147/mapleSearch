@@ -10,7 +10,7 @@
           {{ isDark ? "Light Mode" : "Dark Mode" }}
         </button>
         <NuxtLink to="/bossBirth" class="cta secondary">怪物重生</NuxtLink>
-        <NuxtLink to="/search" class="cta secondary">前往搜尋頁</NuxtLink>
+        <NuxtLink to="/search" class="cta secondary">搜尋頁</NuxtLink>
         <template v-if="authStore.isLoggedIn">
           <span class="user-greeting">Hi, {{ authStore.user?.displayName || "User" }}</span>
           <button class="cta secondary logout-btn" @click="handleLogout">登出</button>
