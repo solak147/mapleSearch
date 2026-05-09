@@ -1,13 +1,16 @@
 <script setup>
-import { defineModel, ref } from "vue";
+import { defineModel, onMounted, ref } from "vue";
 import {
-  getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  linkWithCredential,
+  linkWithPopup,
+  OAuthCredential,
 } from "firebase/auth";
+import { getFirebaseAuth } from "~/utils/firebase";
 
 const isOpen = defineModel({ type: Boolean, default: false });
 
@@ -16,34 +19,182 @@ const password = ref("");
 const errorMsg = ref("");
 const isLoginMode = ref(true); // true = 登入, false = 註冊
 const isLoading = ref(false);
+const pendingLinkStorageKey = "pending-auth-link";
 
-const handleGoogleLogin = async () => {
-  errorMsg.value = "";
-  const auth = getAuth();
+const providerLabels = {
+  "google.com": "Google",
+  "facebook.com": "Facebook",
+  password: "電子郵件密碼",
+};
+
+const closeModal = () => {
+  isOpen.value = false;
+  email.value = "";
+  password.value = "";
+};
+
+const getProviderLabel = (providerId) =>
+  providerLabels[providerId] || providerId;
+
+const savePendingLink = (credential, conflictEmail, providerName) => {
+  if (!process.client) {
+    return;
+  }
+
+  sessionStorage.setItem(
+    pendingLinkStorageKey,
+    JSON.stringify({
+      credential: credential.toJSON(),
+      conflictEmail,
+      providerName,
+    }),
+  );
+};
+
+const getPendingLink = () => {
+  if (!process.client) {
+    return null;
+  }
+
+  const raw = sessionStorage.getItem(pendingLinkStorageKey);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    sessionStorage.removeItem(pendingLinkStorageKey);
+    return null;
+  }
+};
+
+const clearPendingLink = () => {
+  if (!process.client) {
+    return;
+  }
+
+  sessionStorage.removeItem(pendingLinkStorageKey);
+};
+
+const createGoogleProvider = () => {
   const provider = new GoogleAuthProvider();
+  provider.addScope("email");
+  provider.addScope("profile");
+  return provider;
+};
+
+const createFacebookProvider = () => {
+  const provider = new FacebookAuthProvider();
+  provider.addScope("email");
+  return provider;
+};
+
+const tryLinkStoredCredential = async (user) => {
+  const pendingLink = getPendingLink();
+  if (!pendingLink?.credential || !user) {
+    return false;
+  }
+
+  const restoredCredential = OAuthCredential.fromJSON(pendingLink.credential);
+  if (!restoredCredential) {
+    clearPendingLink();
+    return false;
+  }
+
   try {
-    const result = await signInWithPopup(auth, provider);
-    console.log("Google 登入成功:", result.user);
-    isOpen.value = false;
+    await linkWithCredential(user, restoredCredential);
+    clearPendingLink();
+    console.log(
+      `${pendingLink.providerName || "社群帳號"} 已綁定到既有帳號:`,
+      user.email,
+    );
+    return true;
   } catch (error) {
-    console.error("Google 登入失敗:", error);
-    errorMsg.value = "Google 登入失敗: " + error.message;
+    if (
+      error.code === "auth/provider-already-linked" ||
+      error.code === "auth/credential-already-in-use"
+    ) {
+      clearPendingLink();
+      return true;
+    }
+
+    throw error;
   }
 };
 
-const handleFacebookLogin = async () => {
+const handleProviderLogin = async (provider, providerId, providerName) => {
   errorMsg.value = "";
-  const auth = getAuth();
-  const provider = new FacebookAuthProvider();
+  isLoading.value = true;
+  const auth = getFirebaseAuth();
+
   try {
+    if (
+      auth.currentUser &&
+      !auth.currentUser.isAnonymous &&
+      auth.currentUser.providerData.some(
+        (linkedProvider) => linkedProvider.providerId !== providerId,
+      )
+    ) {
+      const result = await linkWithPopup(auth.currentUser, provider);
+      console.log(`${providerName} 綁定成功:`, result.user);
+      closeModal();
+      return;
+    }
+
     const result = await signInWithPopup(auth, provider);
-    console.log("Facebook 登入成功:", result.user);
-    isOpen.value = false;
+    await tryLinkStoredCredential(result.user);
+    console.log(`${providerName} 登入成功:`, result.user);
+    closeModal();
   } catch (error) {
-    console.error("Facebook 登入失敗:", error);
-    errorMsg.value = "Facebook 登入失敗: " + error.message;
+    try {
+      if (error.code === "auth/account-exists-with-different-credential") {
+        const pendingCredential =
+          providerId === "google.com"
+            ? GoogleAuthProvider.credentialFromError(error)
+            : FacebookAuthProvider.credentialFromError(error);
+        const conflictEmail = error.customData?.email;
+
+        if (!pendingCredential) {
+          throw error;
+        }
+
+        if (!conflictEmail) {
+          throw new Error(
+            `${providerName} 沒有回傳 email，無法自動綁定。請先用原本帳號登入後，再點 ${providerName} 進行綁定。`,
+          );
+        }
+
+        savePendingLink(pendingCredential, conflictEmail, providerName);
+        errorMsg.value = `${conflictEmail} 已有既有帳號。請先用原本登入方式登入，登入成功後我會自動綁定 ${providerName}。`;
+        return;
+      }
+
+      if (error.code === "auth/credential-already-in-use") {
+        errorMsg.value = `${providerName} 已經綁定到其他帳號，請改用原本的登入方式。`;
+        return;
+      }
+
+      if (error.code === "auth/provider-already-linked") {
+        errorMsg.value = `${providerName} 已經綁定在目前帳號。`;
+        return;
+      }
+
+      throw error;
+    } catch (handledError) {
+      console.error(`${providerName} 登入失敗:`, handledError);
+      errorMsg.value = `${providerName} 登入失敗: ${handledError.message}`;
+    }
+  } finally {
+    isLoading.value = false;
   }
 };
+
+const handleGoogleLogin = async () =>
+  handleProviderLogin(createGoogleProvider(), "google.com", "Google");
+
+const handleFacebookLogin = async () =>
+  handleProviderLogin(createFacebookProvider(), "facebook.com", "Facebook");
 
 const handleEmailAuth = async () => {
   if (!email.value || !password.value) {
@@ -53,7 +204,7 @@ const handleEmailAuth = async () => {
   errorMsg.value = "";
   isLoading.value = true;
 
-  const auth = getAuth();
+  const auth = getFirebaseAuth();
   try {
     if (isLoginMode.value) {
       const result = await signInWithEmailAndPassword(
@@ -61,6 +212,7 @@ const handleEmailAuth = async () => {
         email.value,
         password.value,
       );
+      await tryLinkStoredCredential(result.user);
       console.log("Email 登入成功:", result.user);
     } else {
       const result = await createUserWithEmailAndPassword(
@@ -68,11 +220,10 @@ const handleEmailAuth = async () => {
         email.value,
         password.value,
       );
+      await tryLinkStoredCredential(result.user);
       console.log("Email 註冊成功:", result.user);
     }
-    isOpen.value = false;
-    email.value = "";
-    password.value = "";
+    closeModal();
   } catch (error) {
     console.error("Email 驗證失敗:", error);
     errorMsg.value =
@@ -81,6 +232,17 @@ const handleEmailAuth = async () => {
     isLoading.value = false;
   }
 };
+
+onMounted(async () => {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) {
+    try {
+      await tryLinkStoredCredential(auth.currentUser);
+    } catch (error) {
+      console.error("自動綁定待處理 credential 失敗:", error);
+    }
+  }
+});
 </script>
 
 <template>

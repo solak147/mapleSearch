@@ -27,8 +27,9 @@
 
 <script setup>
 import { onMounted, ref, watch } from "vue";
-import { getAuth, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { useAuthStore } from "~/stores/auth";
+import { getFirebaseAuth } from "~/utils/firebase";
 
 defineProps({
   showLinks: {
@@ -43,7 +44,7 @@ const showLoginModal = ref(false);
 
 const handleLogout = async () => {
   try {
-    const auth = getAuth();
+    const auth = getFirebaseAuth();
     await signOut(auth);
   } catch (error) {
     console.error("登出失敗:", error);
