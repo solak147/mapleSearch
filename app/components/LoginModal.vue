@@ -4,6 +4,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
+  EmailAuthProvider,
+  EmailAuthCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   linkWithCredential,
@@ -36,7 +38,12 @@ const closeModal = () => {
 const getProviderLabel = (providerId) =>
   providerLabels[providerId] || providerId;
 
-const savePendingLink = (credential, conflictEmail, providerName) => {
+const savePendingLink = (
+  credential,
+  conflictEmail,
+  providerName,
+  providerId = credential.providerId,
+) => {
   if (!process.client) {
     return;
   }
@@ -47,6 +54,7 @@ const savePendingLink = (credential, conflictEmail, providerName) => {
       credential: credential.toJSON(),
       conflictEmail,
       providerName,
+      providerId,
     }),
   );
 };
@@ -77,6 +85,9 @@ const clearPendingLink = () => {
   sessionStorage.removeItem(pendingLinkStorageKey);
 };
 
+const createEmailCredential = (inputEmail, inputPassword) =>
+  EmailAuthProvider.credential(inputEmail.trim(), inputPassword);
+
 const createGoogleProvider = () => {
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
@@ -96,7 +107,10 @@ const tryLinkStoredCredential = async (user) => {
     return false;
   }
 
-  const restoredCredential = OAuthCredential.fromJSON(pendingLink.credential);
+  const restoredCredential =
+    pendingLink.providerId === "password"
+      ? EmailAuthCredential.fromJSON(pendingLink.credential)
+      : OAuthCredential.fromJSON(pendingLink.credential);
   if (!restoredCredential) {
     clearPendingLink();
     return false;
@@ -205,11 +219,25 @@ const handleEmailAuth = async () => {
   isLoading.value = true;
 
   const auth = getFirebaseAuth();
+  const normalizedEmail = email.value.trim();
+  const emailCredential = createEmailCredential(normalizedEmail, password.value);
   try {
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      const currentEmail = auth.currentUser.email?.trim().toLowerCase();
+      if (currentEmail && currentEmail !== normalizedEmail.toLowerCase()) {
+        throw new Error("目前登入中的帳號信箱不同，請使用相同信箱進行綁定。");
+      }
+
+      await linkWithCredential(auth.currentUser, emailCredential);
+      console.log("Email 密碼已綁定到目前帳號:", auth.currentUser);
+      closeModal();
+      return;
+    }
+
     if (isLoginMode.value) {
       const result = await signInWithEmailAndPassword(
         auth,
-        email.value,
+        normalizedEmail,
         password.value,
       );
       await tryLinkStoredCredential(result.user);
@@ -217,7 +245,7 @@ const handleEmailAuth = async () => {
     } else {
       const result = await createUserWithEmailAndPassword(
         auth,
-        email.value,
+        normalizedEmail,
         password.value,
       );
       await tryLinkStoredCredential(result.user);
@@ -225,6 +253,25 @@ const handleEmailAuth = async () => {
     }
     closeModal();
   } catch (error) {
+    if (error.code === "auth/email-already-in-use") {
+      savePendingLink(emailCredential, normalizedEmail, "電子郵件密碼", "password");
+      errorMsg.value = `${normalizedEmail} 已有既有帳號。請先用 Google 或 Facebook 登入，登入成功後我會自動綁定電子郵件密碼。`;
+      isLoading.value = false;
+      return;
+    }
+
+    if (error.code === "auth/provider-already-linked") {
+      errorMsg.value = "電子郵件密碼已經綁定在目前帳號。";
+      isLoading.value = false;
+      return;
+    }
+
+    if (error.code === "auth/credential-already-in-use") {
+      errorMsg.value = "這組電子郵件密碼已經綁定到其他帳號。";
+      isLoading.value = false;
+      return;
+    }
+
     console.error("Email 驗證失敗:", error);
     errorMsg.value =
       (isLoginMode.value ? "登入失敗: " : "註冊失敗: ") + error.message;
