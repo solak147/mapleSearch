@@ -11,6 +11,7 @@ import {
   linkWithCredential,
   linkWithPopup,
   OAuthCredential,
+  sendEmailVerification,
 } from "firebase/auth";
 import { getFirebaseAuth } from "~/utils/firebase";
 
@@ -19,6 +20,7 @@ const isOpen = defineModel({ type: Boolean, default: false });
 const email = ref("");
 const password = ref("");
 const errorMsg = ref("");
+const successMsg = ref("");
 const isLoginMode = ref(true); // true = 登入, false = 註冊
 const isLoading = ref(false);
 const pendingLinkStorageKey = "pending-auth-link";
@@ -33,6 +35,8 @@ const closeModal = () => {
   isOpen.value = false;
   email.value = "";
   password.value = "";
+  errorMsg.value = "";
+  successMsg.value = "";
 };
 
 const getProviderLabel = (providerId) =>
@@ -139,6 +143,7 @@ const tryLinkStoredCredential = async (user) => {
 
 const handleProviderLogin = async (provider, providerId, providerName) => {
   errorMsg.value = "";
+  successMsg.value = "";
   isLoading.value = true;
   const auth = getFirebaseAuth();
 
@@ -216,6 +221,7 @@ const handleEmailAuth = async () => {
     return;
   }
   errorMsg.value = "";
+  successMsg.value = "";
   isLoading.value = true;
 
   const auth = getFirebaseAuth();
@@ -229,8 +235,12 @@ const handleEmailAuth = async () => {
       }
 
       await linkWithCredential(auth.currentUser, emailCredential);
+      if (!auth.currentUser.emailVerified) {
+        await sendEmailVerification(auth.currentUser);
+      }
+      successMsg.value = `驗證信已寄到 ${normalizedEmail}，請到信箱完成驗證。`;
       console.log("Email 密碼已綁定到目前帳號:", auth.currentUser);
-      closeModal();
+      password.value = "";
       return;
     }
 
@@ -249,7 +259,12 @@ const handleEmailAuth = async () => {
         password.value,
       );
       await tryLinkStoredCredential(result.user);
+      await sendEmailVerification(result.user);
+      successMsg.value = `驗證信已寄到 ${normalizedEmail}，請到信箱完成驗證後再登入。`;
+      isLoginMode.value = true;
+      password.value = "";
       console.log("Email 註冊成功:", result.user);
+      return;
     }
     closeModal();
   } catch (error) {
@@ -334,6 +349,7 @@ onMounted(async () => {
           />
 
           <p v-if="errorMsg" class="error-msg">{{ errorMsg }}</p>
+          <p v-if="successMsg" class="success-msg">{{ successMsg }}</p>
 
           <button type="submit" class="submit-btn" :disabled="isLoading">
             {{ isLoading ? "處理中..." : isLoginMode ? "登入" : "註冊" }}
@@ -540,6 +556,13 @@ onMounted(async () => {
 
 .error-msg {
   color: #e74c3c;
+  font-size: 13px;
+  margin: 0;
+  text-align: left;
+}
+
+.success-msg {
+  color: #1f7a1f;
   font-size: 13px;
   margin: 0;
   text-align: left;
