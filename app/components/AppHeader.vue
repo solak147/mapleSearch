@@ -9,6 +9,7 @@
         <button class="theme-toggle" @click="isDark = !isDark">
           {{ isDark ? "Light Mode" : "Dark Mode" }}
         </button>
+        <button class="cta secondary purchase-btn" @click="showPurchaseModal = true">購買會員</button>
         <NuxtLink to="/bossBirth" class="cta secondary">怪物重生</NuxtLink>
         <NuxtLink to="/search" class="cta secondary">搜尋頁</NuxtLink>
         <template v-if="authStore.isLoggedIn">
@@ -22,6 +23,7 @@
     </nav>
 
     <LoginModal v-model="showLoginModal" />
+    <PurchaseMembershipModal v-model="showPurchaseModal" />
   </header>
 </template>
 
@@ -41,6 +43,7 @@ defineProps({
 const authStore = useAuthStore();
 const isDark = ref(false);
 const showLoginModal = ref(false);
+const showPurchaseModal = ref(false);
 
 const handleLogout = async () => {
   try {
